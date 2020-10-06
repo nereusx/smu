@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LENGTH(x)  sizeof(x)/sizeof(x[0])
 #define ADDC(b,i)  if (i % BUFSIZ == 0) { b = realloc(b, (i + BUFSIZ) * sizeof(char)); if (!b) eprint("Malloc failed."); } b[i]
 
 typedef int (*Parser)(const char *, const char *, int);
@@ -35,15 +34,18 @@ static void *ereallocz(void *p, size_t size);
 static void hprint(const char *begin, const char *end);                   /* escapes HTML and prints it to output */
 static void process(const char *begin, const char *end, int isblock);     /* Processes range between begin and end. */
 
+/* options */
+static int opt_nohtml = 0;
+static int opt_mdoc = 0;
+
 /* list of parsers */
 static Parser parsers[] = { dounderline, docomment, docodefence, dolineprefix,
 	                    dolist, doparagraph, dosurround, dolink,
-	                    doshortlink, dohtml, doreplace };
-static int nohtml = 0;
+	                    doshortlink, dohtml, doreplace, NULL };
 
 regex_t p_end_regex;  /* End of paragraph */
 
-static Tag lineprefix[] = {
+static Tag html_lineprefix[] = {
 	{ "    ",       0,      "<pre><code>", "\n</code></pre>" },
 	{ "\t",         0,      "<pre><code>", "\n</code></pre>" },
 	{ ">",          2,      "<blockquote>", "</blockquote>" },
@@ -54,14 +56,20 @@ static Tag lineprefix[] = {
 	{ "## ",        1,      "<h2>",         "</h2>" },
 	{ "# ",         1,      "<h1>",         "</h1>" },
 	{ "- - -\n",    1,      "<hr />",       ""},
+	{ NULL, 0, NULL, NULL}
 };
 
-static Tag underline[] = {
+static Tag *lineprefix = html_lineprefix;
+
+static Tag html_underline[] = {
 	{ "=",          1,      "<h1>",         "</h1>\n" },
 	{ "-",          1,      "<h2>",         "</h2>\n" },
+	{ NULL, 0, NULL, NULL}
 };
 
-static Tag surround[] = {
+static Tag *underline = html_underline;
+
+static Tag html_surround[] = {
 	{ "```",        0,      "<code>",       "</code>" },
 	{ "``",         0,      "<code>",       "</code>" },
 	{ "`",          0,      "<code>",       "</code>" },
@@ -71,9 +79,17 @@ static Tag surround[] = {
 	{ "**",         1,      "<strong>",     "</strong>" },
 	{ "_",          1,      "<em>",         "</em>" },
 	{ "*",          1,      "<em>",         "</em>" },
+	{ NULL, 0, NULL, NULL}
 };
 
-static const char *replace[][2] = {
+static Tag *surround = html_surround;
+
+typedef struct {
+	const char *what;
+	const char *with;
+	} ReplaceText;
+
+static ReplaceText html_replace[] = {
 	/* Backslash escapes */
 	{ "\\\\",       "\\" },
 	{ "\\`",        "`" },
@@ -116,7 +132,10 @@ static const char *replace[][2] = {
 	{ "&",          "&amp;" },
 	/* Preserve newlines with two spaces before linebreak */
 	{ "  \n",       "<br />\n" },
+	{ NULL, NULL },
 };
+
+static ReplaceText *replace = html_replace;
 
 static const char *code_fence = "```";
 
@@ -134,7 +153,7 @@ int
 docomment(const char *begin, const char *end, int newblock) {
 	char *p;
 
-	if (nohtml || strncmp("<!--", begin, 4))
+	if (opt_nohtml || strncmp("<!--", begin, 4))
 		return 0;
 	p = strstr(begin, "-->");
 	if (!p || p + 3 >= end)
@@ -192,7 +211,7 @@ int
 dohtml(const char *begin, const char *end, int newblock) {
 	const char *p, *tag, *tagend;
 
-	if (nohtml || begin + 2 >= end)
+	if (opt_nohtml || begin + 2 >= end)
 		return 0;
 	p = begin;
 	if (p[0] != '<' || !isalpha(p[1]))
@@ -232,7 +251,7 @@ dolineprefix(const char *begin, const char *end, int newblock) {
 		p = begin + 1;
 	else
 		return 0;
-	for (i = 0; i < LENGTH(lineprefix); i++) {
+	for (i = 0; lineprefix[i].search; i++) {
 		l = strlen(lineprefix[i].search);
 		if (end - p < l)
 			continue;
@@ -490,12 +509,12 @@ int
 doreplace(const char *begin, const char *end, int newblock) {
 	unsigned int i, l;
 
-	for (i = 0; i < LENGTH(replace); i++) {
-		l = strlen(replace[i][0]);
+	for (i = 0; replace[i].what; i++) {
+		l = strlen(replace[i].what);
 		if (end - begin < l)
 			continue;
-		if (strncmp(replace[i][0], begin, l) == 0) {
-			fputs(replace[i][1], stdout);
+		if (strncmp(replace[i].what, begin, l) == 0) {
+			fputs(replace[i].with, stdout);
 			return l;
 		}
 	}
@@ -553,7 +572,7 @@ dosurround(const char *begin, const char *end, int newblock) {
 	unsigned int i, l;
 	const char *p, *start, *stop;
 
-	for (i = 0; i < LENGTH(surround); i++) {
+	for (i = 0; surround[i].search; i++) {
 		l = strlen(surround[i].search);
 		if (end - begin < 2*l || strncmp(begin, surround[i].search, l) != 0)
 			continue;
@@ -598,7 +617,7 @@ dounderline(const char *begin, const char *end, int newblock) {
 	p += l + 1;
 	if (l == 0)
 		return 0;
-	for (i = 0; i < LENGTH(underline); i++) {
+	for (i = 0; underline[i].search; i++) {
 		for (j = 0; p + j < end && p[j] != '\n' && p[j] == underline[i].search[0]; j++);
 		if (j >= l) {
 			fputs(underline[i].before, stdout);
@@ -656,7 +675,7 @@ process(const char *begin, const char *end, int newblock) {
 				if (++p == end)
 					return;
 
-		for (i = 0; i < LENGTH(parsers); i++)
+		for (i = 0; parsers[i]; i++)
 			if ((affected = parsers[i](p, end, newblock)))
 				break;
 		if (affected)
@@ -688,7 +707,9 @@ main(int argc, char *argv[]) {
 		if (!strcmp("-v", argv[i]))
 			eprint("simple markup %s (C) Enno Boland\n",VERSION);
 		else if (!strcmp("-n", argv[i]))
-			nohtml = 1;
+			opt_nohtml = 1;
+		else if (!strcmp("-m", argv[i]))
+			opt_mdoc = 1;
 		else if (argv[i][0] != '-')
 			break;
 		else if (!strcmp("--", argv[i])) {
@@ -697,7 +718,8 @@ main(int argc, char *argv[]) {
 		}
 		else
 			eprint("Usage %s [-n] [file]\n -n escape html strictly\n", argv[0]);
-	}
+		}
+		
 	if (i < argc && !(source = fopen(argv[i], "r")))
 		eprint("Cannot open file `%s`\n",argv[i]);
 	bsize = 2 * BUFSIZ;
