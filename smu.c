@@ -59,6 +59,20 @@ static Tag html_lineprefix[] = {
 	{ NULL, 0, NULL, NULL}
 };
 
+static Tag mdoc_lineprefix[] = {
+	{ "    ",       0,      "<pre><code>", "\n</code></pre>" },
+	{ "\t",         0,      "<pre><code>", "\n</code></pre>" },
+	{ ">",          2,      "<blockquote>", "</blockquote>" },
+	{ "###### ",    1,      ".SH",         "\n" },
+	{ "##### ",     1,      ".SH",         "\n" },
+	{ "#### ",      1,      ".SH",         "\n" },
+	{ "### ",       1,      ".SH",         "\n" },
+	{ "## ",        1,      ".SH",         "\n" },
+	{ "# ",         1,      ".SH",         "\n" },
+	{ "- - -\n",    1,      "---",       "\n"},
+	{ NULL, 0, NULL, NULL}
+};
+
 static Tag *lineprefix = html_lineprefix;
 
 static Tag html_underline[] = {
@@ -67,9 +81,28 @@ static Tag html_underline[] = {
 	{ NULL, 0, NULL, NULL}
 };
 
+static Tag mdoc_underline[] = {
+	{ "=",          1,      ".SH",         "\n" },
+	{ "-",          1,      ".SH",         "\n" },
+	{ NULL, 0, NULL, NULL}
+};
+
 static Tag *underline = html_underline;
 
 static Tag html_surround[] = {
+	{ "```",        0,      "<code>",       "</code>" },
+	{ "``",         0,      "<code>",       "</code>" },
+	{ "`",          0,      "<code>",       "</code>" },
+	{ "___",        1,      "<strong><em>", "</em></strong>" },
+	{ "***",        1,      "<strong><em>", "</em></strong>" },
+	{ "__",         1,      "<strong>",     "</strong>" },
+	{ "**",         1,      "<strong>",     "</strong>" },
+	{ "_",          1,      "<em>",         "</em>" },
+	{ "*",          1,      "<em>",         "</em>" },
+	{ NULL, 0, NULL, NULL}
+};
+
+static Tag mdoc_surround[] = {
 	{ "```",        0,      "<code>",       "</code>" },
 	{ "``",         0,      "<code>",       "</code>" },
 	{ "`",          0,      "<code>",       "</code>" },
@@ -147,6 +180,25 @@ eprint(const char *format, ...) {
 	vfprintf(stderr, format, ap);
 	va_end(ap);
 	exit(EXIT_FAILURE);
+}
+
+void	selectformat(int fmt)
+{
+	switch ( fmt ) {
+	case 0:
+		lineprefix = html_lineprefix;
+		underline = html_underline;
+		surround = html_surround;
+		replace = html_replace;
+		break;
+	case 1:
+		lineprefix = mdoc_lineprefix;
+		underline = mdoc_underline;
+		surround = mdoc_surround;
+/*		replace = mdoc_replace;*/
+		replace = html_replace;
+		break;
+		};
 }
 
 int
@@ -703,13 +755,15 @@ main(int argc, char *argv[]) {
 
 	regcomp(&p_end_regex, "(\n\n|(^|\n)```)", REG_EXTENDED);
 
-	for (i = 1; i < argc; i++) {
+	for ( i = 1; i < argc; i ++ ) {
 		if (!strcmp("-v", argv[i]))
 			eprint("simple markup %s (C) Enno Boland\n",VERSION);
 		else if (!strcmp("-n", argv[i]))
 			opt_nohtml = 1;
-		else if (!strcmp("-m", argv[i]))
+		else if (!strcmp("-m", argv[i])) {
 			opt_mdoc = 1;
+			selectformat(1);
+			}
 		else if (argv[i][0] != '-')
 			break;
 		else if (!strcmp("--", argv[i])) {
