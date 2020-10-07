@@ -60,15 +60,15 @@ static Tag html_lineprefix[] = {
 };
 
 static Tag mdoc_lineprefix[] = {
-	{ "    ",       0,      "<pre><code>", "\n</code></pre>" },
-	{ "\t",         0,      "<pre><code>", "\n</code></pre>" },
-	{ ">",          2,      "<blockquote>", "</blockquote>" },
-	{ "###### ",    1,      ".SH",         "\n" },
-	{ "##### ",     1,      ".SH",         "\n" },
-	{ "#### ",      1,      ".SH",         "\n" },
-	{ "### ",       1,      ".SH",         "\n" },
-	{ "## ",        1,      ".SH",         "\n" },
-	{ "# ",         1,      ".SH",         "\n" },
+	{ "    ",       0,      ".Bd -literal -offset indent\n", "\n.Ed\n" },
+	{ "\t",         0,      ".Bd -literal -offset indent\n", "\n.Ed\n" },
+	{ ">",          2,      ".Bd -offset indent\n", "\n.Ed\n" },
+	{ "###### ",    1,      ".Ss",         "\n" },
+	{ "##### ",     1,      ".Ss",         "\n" },
+	{ "#### ",      1,      ".Ss",         "\n" },
+	{ "### ",       1,      ".Ss",         "\n" },
+	{ "## ",        1,      ".Ss",         "\n" },
+	{ "# ",         1,      ".Sh",         "\n" },
 	{ "- - -\n",    1,      "---",       "\n"},
 	{ NULL, 0, NULL, NULL}
 };
@@ -82,8 +82,8 @@ static Tag html_underline[] = {
 };
 
 static Tag mdoc_underline[] = {
-	{ "=",          1,      ".SH",         "\n" },
-	{ "-",          1,      ".SH",         "\n" },
+	{ "=",          1,      ".Sh",         "\n" },
+	{ "-",          1,      ".Ss",         "\n" },
 	{ NULL, 0, NULL, NULL}
 };
 
@@ -103,15 +103,15 @@ static Tag html_surround[] = {
 };
 
 static Tag mdoc_surround[] = {
-	{ "```",        0,      "<code>",       "</code>" },
-	{ "``",         0,      "<code>",       "</code>" },
-	{ "`",          0,      "<code>",       "</code>" },
-	{ "___",        1,      "<strong><em>", "</em></strong>" },
-	{ "***",        1,      "<strong><em>", "</em></strong>" },
-	{ "__",         1,      "<strong>",     "</strong>" },
-	{ "**",         1,      "<strong>",     "</strong>" },
-	{ "_",          1,      "<em>",         "</em>" },
-	{ "*",          1,      "<em>",         "</em>" },
+	{ "```",        0,      "\n.Ql ",       "\n" },
+	{ "``",         0,      "\n.Ql ",       "\n" },
+	{ "`",          0,      "\n.Ql ",       "\n" },
+	{ "___",        1,      "\n.Bf Sy Em\n", "\n.Ef\n" },
+	{ "***",        1,      "\n.Bf Sy Em\n", "\n.Ef\n" },
+	{ "__",         1,      "\n.Bf Sy\n",     "\n.Ef\n" },
+	{ "**",         1,      "\n.Bf Sy\n",     "\n.Ef\n" },
+	{ "_",          1,      "\n.Bf Em\n",     "\n.Ef\n" },
+	{ "*",          1,      "\n.Bf Em\n",     "\n.Ef\n" },
 	{ NULL, 0, NULL, NULL}
 };
 
