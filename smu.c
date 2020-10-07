@@ -73,6 +73,20 @@ static Tag mdoc_lineprefix[] = {
 	{ NULL, 0, NULL, NULL}
 };
 
+static Tag latex_lineprefix[] = {
+	{ "    ",       0,      "\\begin{code}\n", "\n\\end{code}\n" },
+	{ "\t",         0,      "\\begin{code}\n", "\n\\end{code}\n" },
+	{ ">",          2,      "\\begin{quoted}\n", "\\end{quoted}\n" },
+	{ "###### ",    1,      "\\subsubsection{",         "}\n" },
+	{ "##### ",     1,      "\\subsubsection{",         "}\n" },
+	{ "#### ",      1,      "\\subsubsection{",         "}\n" },
+	{ "### ",       1,      "\\subsection{",         "}\n" },
+	{ "## ",        1,      "\\section{",         "}\n" },
+	{ "# ",         1,      "\\chapter{",         "}\n" },
+	{ "- - -\n",    1,      "---",       "\n"},
+	{ NULL, 0, NULL, NULL}
+};
+
 static Tag *lineprefix = html_lineprefix;
 
 static Tag html_underline[] = {
@@ -84,6 +98,12 @@ static Tag html_underline[] = {
 static Tag mdoc_underline[] = {
 	{ "=",          1,      ".Sh",         "\n" },
 	{ "-",          1,      ".Ss",         "\n" },
+	{ NULL, 0, NULL, NULL}
+};
+
+static Tag latex_underline[] = {
+	{ "=",          1,      "\\chapter{",         "}\n" },
+	{ "-",          1,      "\\section{",         "}\n" },
 	{ NULL, 0, NULL, NULL}
 };
 
@@ -112,6 +132,19 @@ static Tag mdoc_surround[] = {
 	{ "**",         1,      "\n.Bf Sy\n",     "\n.Ef\n" },
 	{ "_",          1,      "\n.Bf Em\n",     "\n.Ef\n" },
 	{ "*",          1,      "\n.Bf Em\n",     "\n.Ef\n" },
+	{ NULL, 0, NULL, NULL}
+};
+
+static Tag latex_surround[] = {
+	{ "```",        0,      "\\code{",       "}" },
+	{ "``",         0,      "\\code{",       "}" },
+	{ "`",          0,      "\\code{",       "}" },
+	{ "___",        1,      "\\textbold{\\textit{", "}}" },
+	{ "***",        1,      "\\textbold{\\textit{", "}}" },
+	{ "__",         1,      "\\textbold{",     "}" },
+	{ "**",         1,      "\\textbold{",     "}" },
+	{ "_",          1,      "\\textit{",     "}" },
+	{ "*",          1,      "\\textit{",     "}" },
 	{ NULL, 0, NULL, NULL}
 };
 
